@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Finance Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffe6ef;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .tracker-container {
+            background-color: #ffccda;
+            border-radius: 12px;
+            padding: 20px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #d14b78;
+        }
+
+        .form-group {
+            margin: 15px 0;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            color: #b53b6f;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ff99b8;
+            background-color: #ffe6f1;
+            font-size: 16px;
+            color: #5a5a5a;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #d14b78;
+        }
+
+        .add-transaction-btn,
+        .end-month-btn {
+            background-color: #d14b78;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .add-transaction-btn:hover,
+        .end-month-btn:hover {
+            background-color: #b53b6f;
+        }
+
+        .summary {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #faacc8;
+            border-radius: 8px;
+            font-size: 18px;
+            color: #6e2042;
+        }
+
+        .transaction-list {
+            margin-top: 20px;
+            text-align: left;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .transaction-list ul {
+            padding: 0;
+            margin: 0;
+            list-style-type: none;
+        }
+
+        .transaction-list li {
+            margin: 5px 0;
+            padding: 8px;
+            background-color: #ffe6f1;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            color: #5a5a5a;
+            font-size: 14px;
+        }
+
+        .transaction-list li.income {
+            color: #228B22;
+        }
+
+        .transaction-list li.expense {
+            color: #D72638;
+        }
+
+        .monthly-records {
+            margin-top: 20px;
+            background-color: #ffe6f1;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .monthly-records h3 {
+            color: #d14b78;
+        }
+
+        .monthly-records ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .monthly-records li {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #faacc8;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="tracker-container">
+        <h1>Monthly Finance Tracker</h1>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <input type="text" id="description" placeholder="E.g., Rent, Salary" />
+        </div>
+        <div class="form-group">
+            <label for="amount">Amount</label>
+            <input type="number" id="amount" placeholder="E.g., 200, 1000" />
+        </div>
+        <div class="form-group">
+            <label for="type">Type</label>
+            <select id="type">
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+        </div>
+        <button class="add-transaction-btn" onclick="addTransaction()">Add Transaction</button>
+
+        <div class="summary">
+            <p>Total Income: $<span id="total-income">0</span></p>
+            <p>Total Expenses: $<span id="total-expenses">0</span></p>
+            <p>Remaining Balance: $<span id="remaining-balance">0</span></p>
+        </div>
+
+        <div class="transaction-list">
+            <h3>Current Month Transactions</h3>
+            <ul id="transactions"></ul>
+        </div>
+
+        <button class="end-month-btn" onclick="endMonth()">End Month & Save</button>
+
+        <div class="monthly-records">
+            <h3>Monthly Records</h3>
+            <ul id="monthly-records"></ul>
+        </div>
+    </div>
+
+    <script>
+        let totalIncome = 0;
+        let totalExpenses = 0;
+        let transactions = [];
+        let monthlyRecords = JSON.parse(localStorage.getItem('monthlyRecords')) || [];
+
+        function addTransaction() {
+            const description = document.getElementById('description').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const type = document.getElementById('type').value;
+
+            if (!description || isNaN(amount) || amount <= 0) {
+                alert('Please provide valid inputs.');
+                return;
+            }
+
+            const transaction = { description, amount, type };
+            transactions.push(transaction);
+
+            if (type === 'income') {
+                totalIncome += amount;
+            } else {
+                totalExpenses += amount;
+            }
+
+            updateUI();
+        }
+
+        function updateUI() {
+            const remainingBalance = totalIncome - totalExpenses;
+
+            document.getElementById('total-income').textContent = totalIncome.toFixed(2);
+            document.getElementById('total-expenses').textContent = totalExpenses.toFixed(2);
+            document.getElementById('remaining-balance').textContent = remainingBalance.toFixed(2);
+
+            const transactionList = document.getElementById('transactions');
+            transactionList.innerHTML = '';
+            transactions.forEach((transaction) => {
+                const li = document.createElement('li');
+                li.className = transaction.type;
+                li.innerHTML = `
+                    <span>${transaction.description} ($${transaction.amount.toFixed(2)})</span>
+                    <span>${transaction.type === 'income' ? '+' : '-'}</span>
+                `;
+                transactionList.appendChild(li);
+            });
+        }
+
+        function endMonth() {
+            if (transactions.length === 0) {
+                alert('No transactions to save for this month.');
+                return;
+            }
+
+            const monthSummary = {
+                month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
+                totalIncome,
+                totalExpenses,
+                balance: totalIncome - totalExpenses,
+            };
+
+            monthlyRecords.push(monthSummary);
+            localStorage.setItem('monthlyRecords', JSON.stringify(monthlyRecords));
+
+            transactions = [];
+            totalIncome = 0;
+            totalExpenses = 0;
+
+            updateUI();
+            updateMonthlyRecords();
+        }
+
+        function updateMonthlyRecords() {
+            const monthlyRecordsList = document.getElementById('monthly-records');
+            monthlyRecordsList.innerHTML = '';
+            monthlyRecords.forEach((record) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <strong>${record.month}</strong><br>
+                    Income: $${record.totalIncome.toFixed(2)}<br>
+                    Expenses: $${record.totalExpenses.toFixed(2)}<br>
+                    Balance: $${record.balance.toFixed(2)}
+                `;
+                monthlyRecordsList.appendChild(li);
+            });
+        }
+
+        // Load monthly records on page load
+        window.onload = function () {
+            updateMonthlyRecords();
+        };
+    </script>
+</body>
+</html>
